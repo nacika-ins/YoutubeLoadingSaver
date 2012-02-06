@@ -1,0 +1,157 @@
+#include "mod_wrun.hsp"
+#packopt name "screensaver"
+#packopt type 2
+#packopt hide 1
+#epack "01.jpg"
+#epack "02.jpg"
+#epack "03.jpg"
+#epack "04.jpg"
+#epack "05.jpg"
+#epack "06.jpg"
+#epack "07.jpg"
+#epack "08.jpg"
+#epack "09.jpg"
+#epack "10.jpg"
+#epack "11.jpg"
+#epack "12.jpg"
+#epack "13.jpg"
+#epack "14.jpg"
+#epack "15.jpg"
+#epack "16.jpg"
+#epack "17.jpg"
+#epack "yb.jpg"
+
+#uselib "user32.dll"
+#func SetTimer "SetTimer" sptr,sptr,sptr,sptr
+#func CharLower "CharLowerA" sptr
+#define WM_TIMER	$00000113
+
+// --- スクリーンセーバーの名前 ---
+	sctitle ="YoutubeLoadingSaver"
+// --------------------------------
+
+	//二重起動防止
+	if wrun() == 0{
+		end
+	}
+
+	prm = dir_cmdline    ;パラメータ取得
+	getstr dm, prm, 0, '/'
+	prm = strmid(prm, strsize, 1)
+	CharLower varptr(prm)
+#ifdef _debug
+	if prm == "" : prm = "s"
+#else
+	if prm == "" : prm = "c"
+#endif
+	switch prm
+    
+		case "c"
+			// --- 設定 ---
+			
+				dialog "このスクリーンセーバーには、設定できるオプションがありません。", 1, sctitle : swbreak
+				sx = 320
+				sy = 200
+				screen 0, sx, sy, 6, ginfo_dispx-sx>>1, ginfo_dispy-sy>>1
+				title "スクリーンセーバー"
+				syscolor 15 : boxf
+				color : boxf 0, 0, sx, 60
+				color 255, 255, 255 : pos 10 , 10 : mes "スクリーンセーバー\n Ver 1.00 	2009 / 01 / 01"
+				gsel 0, 1
+				stop
+
+			// ------------
+			swbreak
+			
+		case "p"
+		case "s"
+			//フルスクリーン
+			dx = ginfo_dispx		//画面横サイズ
+			dy = ginfo_dispy		//画面縦サイズ
+			ms = 100					//スクリーンセーバーの描画間隔（ミリ秒）
+			thrm = 10				//マウスを動かしたと感じ取る閾値
+
+			buffer 2
+			picload "yb.jpg"
+			pix = ginfo_winx
+			piy = ginfo_winy
+			buffer 3, 32, 640
+			
+			repeat 17
+				pos 0, 32*cnt
+				picload strf("%02d", cnt+1)+".jpg", 1
+			loop
+
+			
+			if prm == "s"{
+				bgscr 0, dx, dy, 2, 0, 0
+				title ""+sctitle
+				tmx = ginfo_mx					//マウスの横の位置を保持
+				tmy = ginfo_my					//マウスの縦の位置を保持
+				onkey *Key
+				onclick *Click
+			} else {
+				buffer 1, dx, dy, 2, 0, 0
+				title ""+sctitle
+			}
+			
+			// --- スクリーンセーバー開始前 ---
+
+				cls 4
+				z = double(dx+dy)/double(639+385)
+				pos 0, dy-(double(piy)*z) : gzoom double(dx)*z, double(piy)*z, 2, 75, 0, 346, piy
+				pos 0, dy-(double(piy)*z) : gzoom double(75)*z, double(piy)*z, 2, 0, 0, 75, piy
+				pos dx-double(217)*z, dy-(double(piy)*z) : gzoom double(217)*z, double(piy)*z, 2, 422, 0, 217, piy
+
+				msx = 32.0*z
+				msy = 32.0*z
+				markx = dx-msx>>1
+				marky = (dy-msy>>1)-((double(piy)*z)/2)
+
+			// --------------------------------
+			gsel 0
+			oncmd gosub *TimerLoop, WM_TIMER
+			SetTimer hwnd, 1, ms, 0
+			stop
+			swbreak
+
+    swend
+	wrunend
+
+*TimerLoop
+
+	if prm == "s" {
+		//マウスを動かしたかキーボードを押したか
+		if (abs(tmx-ginfo_mx)>=thrm)|(abs(tmy-ginfo_my)>=thrm){
+			wrunend
+		}
+	}else{
+		gsel 1
+	}
+	// --- フルスクリーン描画 ---
+
+		
+		pos markx, marky
+		gzoom msx, msy, 3, 0, 32*count, 32, 32
+		count++
+		if count > 16 : count = 10
+
+	// --------------------------
+
+	if prm =="s" {
+		tmx = ginfo_mx					//マウスの横の位置を保持
+    	tmy = ginfo_my					//マウスの縦の位置を保持
+	}
+    
+    if prm == "p" {
+	    gsel 0
+		pos 0, 0 : gzoom 152, 112, 1, 0, 0, dx, dy, 1
+		gsel 1
+    }
+
+    if start == 0 : start = 1 : gsel 0 , 2
+	return
+
+*Key
+*Click
+	wrunend
